@@ -1,0 +1,139 @@
+#!/bin/bash -e
+
+function usage {
+    echo "This script creates an interactive shell environment through condor."
+    echo "  USAGE: condor_shell [OPTIONS]"
+}
+
+function flags {
+    echo "  FLAGS:"
+    echo "    --machine MACHINE"
+    echo "      Specify a machine to run on."
+    echo "    -w,--whole|--whole-machine"
+    echo "      Specify if you want to run a whole machine job"
+    echo "    -s,--suspension"
+    echo "      Specify if you want to run a suspension job"
+    echo "    -C,--change-dir DIR"
+    echo "      Start the job in the directory specified by DIR"
+    echo "    --nwd"
+    echo "      Don't start the job in the same directory that condor_shell is run from"
+    echo "    --dir DIR"
+    echo "      Specify the directory to set up the condor environment [default: ./condor]"
+    echo "    --exec EXEC"
+    echo "      Specify the executable to run [default: <EMPTY>]"
+    echo "    --args <ARGS>"
+    echo "      Specify arguments to run the executable with"
+}
+
+# Default values.
+MACHINE="n"
+WHOLE_MACHINE="n"
+EXEC=""
+INITIAL_DIR="$(pwd)"
+CONDOR_DIR="$(pwd)/condor"
+ARGS=()
+
+while [[ $# -gt 0 ]] ;
+do
+    case $1 in
+        --machine)
+            MACHINE="${2}"
+            shift
+            shift
+            ;;
+        -w|--whole|--whole-machine)
+            WHOLE_MACHINE="y"
+            shift
+            ;;
+        -C|--change-dir)
+            INITIAL_DIR="$(realpath ${2})"
+            shift
+            shift
+            ;;
+        --nwd)
+            INITIAL_DIR="n"
+            shift
+            ;;
+        --dir)
+            CONDOR_DIR="${2}"
+            shift
+            shift
+            ;;
+        --exec)
+            EXEC="${2}"
+            shift
+            shift
+            ;;
+        --args)
+            ARGS+=("${2}")
+            shift
+            shift
+            ;;
+        -h|--help)
+            usage
+            flags
+            exit 0
+            ;;
+        *)
+            echo "Too many positional arguments passed!"
+            usage
+            exit 1
+            ;;
+    esac
+done
+
+mkdir -p "${CONDOR_DIR}"
+
+CONDOR_FILE="${CONDOR_DIR}/condor.job"
+echo -n "" > ${CONDOR_FILE}
+
+echo "Universe = vanilla" >> ${CONDOR_FILE}
+echo "Rank = TARGET.Mips" >> ${CONDOR_FILE}
+echo "Getenv = True" >> ${CONDOR_FILE}
+echo "priority = 0" >> ${CONDOR_FILE}
+
+echo "" >> ${CONDOR_FILE}
+
+if [[ "${MACHINE}" == "n" ]] ; then
+    echo "Requirements = " >> ${CONDOR_FILE}
+else
+    echo "Zythos = ${MACHINE}" >> ${CONDOR_FILE}
+    echo "Requirements = ((Machine == \"\$(Zythos).cs.northwestern.edu\"))" >> ${CONDOR_FILE}
+fi
+
+echo "" >> ${CONDOR_FILE}
+
+if [[ "${WHOLE_MACHINE}" == "n" ]] ; then
+    echo "+IsWholeMachineJob = false" >> ${CONDOR_FILE}
+else
+    echo "+IsWholeMachineJob = true" >> ${CONDOR_FILE}
+fi
+
+echo "+IsSuspensionJob = false" >> ${CONDOR_FILE}
+
+echo "" >> ${CONDOR_FILE}
+
+if [[ "${INITIAL_DIR}" != "n" ]] ; then
+    echo "InitialDir = ${INITIAL_DIR}" >> ${CONDOR_FILE}
+    echo "Remote_InitialDir = ${INITIAL_DIR}" >> ${CONDOR_FILE}
+else
+    EXEC="$(realpath ${EXEC})"
+fi
+
+echo "" >> ${CONDOR_FILE}
+
+echo "Error = ${CONDOR_DIR}/err.\$(Process)" >> ${CONDOR_FILE}
+echo "Output = ${CONDOR_DIR}/out.\$(Process)" >> ${CONDOR_FILE}
+echo "Log = ${CONDOR_DIR}/log.\$(Process)" >> ${CONDOR_FILE}
+
+echo "" >> ${CONDOR_FILE}
+
+echo "Executable = ${EXEC}" >> ${CONDOR_FILE}
+
+for ARG in "${ARGS[@]}"
+do
+    echo "Arguments = ${ARG}" >> ${CONDOR_FILE}
+    echo "queue" >> ${CONDOR_FILE}    
+done
+
+echo "Condor file: ${CONDOR_FILE}"

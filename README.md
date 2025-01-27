@@ -51,3 +51,23 @@ Or, you can specify the machine you want to inspect:
 ```
 condor_usage --machine allagash
 ```
+
+### `condor_init`
+Creates a condor job file in `./condor/`.
+
+`condor_init` shares much of the same arguments as `condor_shell` with a few additions:
+
+You can specify a directory for the condor files other than `./condor` with:
+```
+condor_init --dir ../other_dir
+```
+
+You can specify the executable that condor should run:
+```
+condor_init --exec my_exec
+```
+
+You can specify a list of arguments that you would like to run:
+```
+condor_init --exec ls --args "/home/me/" --args "-d /home/me/"
+```
