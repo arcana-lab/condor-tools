@@ -42,7 +42,7 @@ condor_shell --nwd
 ### `condor_usage`
 Query machines currently in use and their users.
 
-With no arguments, this will give you information about all running jobs (and their user).
+With no arguments, this will give you information about which machines have running jobs and which users are responsible for them. 
 ```
 condor_usage
 ```
