@@ -1,0 +1,11 @@
+#!/bin/bash -e
+
+function usage {
+    echo "This script will \'kick\' a job, which will requeue it."
+    echo "  USAGE: condor_kick JOBID..."
+}
+
+JOBS="$@"
+
+condor_hold "$@"
+condor_release "$@"

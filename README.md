@@ -71,3 +71,12 @@ You can specify a list of arguments that you would like to run:
 ```
 condor_init --exec ls --args "/home/me/" --args "-d /home/me/"
 ```
+
+
+### `condor_kick`
+'Kicks' condor job(s) to reschedule them with the condor scheduler.
+Use this if your job should be getting scheduled, but is still idle.
+
+```
+condor_kick 123456789
+```
